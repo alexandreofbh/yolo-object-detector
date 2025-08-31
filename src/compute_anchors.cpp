@@ -102,7 +102,30 @@ try
     std::vector<std::vector<box_t>> box_groups(num_groups);
     for (const auto& image_info : dataset.images)
     {
-        const auto scale = image_size / std::max<double>(image_info.width, image_info.height);
+        double scale;
+        if (image_info.width >= 1 && image_info.height >= 1)
+        {
+            // Neste caso o xml possui o tamanho da imagem
+            scale = image_size / std::max<double>(image_info.width, image_info.height);
+        }
+        else
+        {
+            // The XML does not contain the image size, so I need to obtain it
+            // I read the image in real time
+            // I’m doing this because when the image size is not present in the training XML file, this value comes as zero
+            // Notice in the training.xml from the front and rear dlib example, only there these dimensions exist
+            //<image file='la_hill_st/la_hill_st_000001.jpg' width='3840' height='2160'>
+            //                                               ^^^^^^^^^^^  ^^^^^^^^^^^^^ 
+            //   <box top='1406' left='668' width='203' height='134'>
+            //   <label>front</label>
+            //   </box>
+            dlib::matrix<dlib::rgb_pixel> image;
+            load_image(image, image_info.filename);
+            long WidthAux=image.nc();
+            long HeightAux=image.nr();
+            scale=image_size/std::max<double>(WidthAux, HeightAux);
+        }
+        
         for (const auto& box : image_info.boxes)
         {
             box_t sample;
